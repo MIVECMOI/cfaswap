@@ -793,29 +793,36 @@ function selectMM(el, name) {
   selectedMM = name;
 }
 
+
 function openExchange() {
   const f = document.getElementById('from1').value;
   const t = document.getElementById('tocur1').value;
-  const a = parseFloat(document.getElementById('amt1').value)||0;
+  const a = parseFloat(document.getElementById('amt1').value) || 0;
+
+  const amountInUSD = a * getRate(f, 'USD');
+  if (amountInUSD < 10) {
+    alert("Le montant minimum requis pour effectuer un échange est l'équivalent de 10 USD.");
+    return;
+  }
+
   const rate = getRate(f,t);
-  const fee = a*FEE;
-  const net = (a-fee)*rate;
+  const fee = a * FEE;
+  const net = (a - fee) * rate;
+
   document.getElementById('modal-send').textContent = fmt(a,f);
   document.getElementById('modal-rate').textContent = fmtRate(f,t,rate);
-  document.getElementById('modal-fee').textContent = fmt(fee,f)+' → Compte CFASwap';
+  document.getElementById('modal-fee').textContent = fmt(fee,f) + ' → Compte CFASwap';
   document.getElementById('modal-receive').textContent = fmt(net,t);
 
-  // Pré-remplir avec les infos du compte
   const name = document.getElementById('prof-name').textContent;
   const email = document.getElementById('prof-email').textContent;
-  if(document.getElementById('tx-name')) document.getElementById('tx-name').value = name !== 'Moussa Diallo' ? name : '';
-  if(document.getElementById('tx-email')) document.getElementById('tx-email').value = email !== 'moussa@email.com' ? email : '';
+  if (document.getElementById('tx-name')) document.getElementById('tx-name').value = name !== 'Moussa Diallo' ? name : '';
+  if (document.getElementById('tx-email')) document.getElementById('tx-email').value = email !== 'moussa@email.com' ? email : '';
 
-  document.getElementById('exchange-form-body').style.display='block';
-  document.getElementById('exchange-success').style.display='none';
+  document.getElementById('exchange-form-body').style.display = 'block';
+  document.getElementById('exchange-success').style.display = 'none';
   document.getElementById('modal-exchange').classList.add('open');
 }
-
 function confirmExchange() {
   const name = document.getElementById('tx-name').value.trim();
   const email = document.getElementById('tx-email').value.trim();
