@@ -1,122 +1,181 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CFASwap</title>
-
-<style>
-body {
-    margin:0;
-    font-family:Arial;
-    background:linear-gradient(135deg,#021f17,#083d2c);
-    color:white;
-    text-align:center;
-}
-
-h1{
-    margin-top:40px;
-    color:#FFD700;
-}
-
-.subtitle{
-    margin-bottom:20px;
-}
-
-.box{
-    background:#0b3d2c;
-    padding:20px;
-    border-radius:15px;
-    margin:20px;
-}
-
-input, select{
-    width:100%;
-    padding:15px;
-    margin:10px 0;
-    border-radius:10px;
-    border:none;
-}
-
-button{
-    width:100%;
-    padding:15px;
-    margin-top:10px;
-    background:#FFD700;
-    border:none;
-    border-radius:10px;
-    font-weight:bold;
-}
-.countries{
-    margin-top:20px;
-}
-</style>
-
-</head>
-
-<body>
-
-<h1>CFASwap</h1>
-<p class="subtitle">CFA • Bitcoin • Ethereum • USDT • EUR • USD</p>
-
-<div class="box">
-
-<input id="amount" placeholder="Entrer le montant">
-
-<select id="from">
-<option value="USD">USD</option>
-<option value="EUR">EUR</option>
-<option value="CFA">CFA</option>
-</select>
-
-<select id="to">
-<option value="CFA">CFA</option>
-<option value="USD">USD</option>
-<option value="EUR">EUR</option>
-</select>
-
-<button onclick="convert()">Convertir</button>
-
-<div id="result"></div>
-
-</div>
-
-<div class="countries">
-<p>🌍 Afrique de l’Ouest & Centrale</p>
-<p>🇹🇬 🇨🇲 🇨🇬 🇸🇳 🇨🇮 🇧🇯 🇲🇱 🇧🇫</p>
-</div>
-
 <script>
-
-const ratesToCFA = {
-USD:600,
-EUR:655,
-CFA:1
+const R={
+  XOF_EUR:0.00152,XOF_USD:0.00165,XOF_BTC:0.00000000258,XOF_ETH:0.0000000310,XOF_USDT:0.00165,
+  EUR_XOF:655.96,EUR_USD:1.085,EUR_BTC:0.0000169,EUR_ETH:0.000203,EUR_USDT:1.085,
+  USD_XOF:606.0,USD_EUR:0.9216,USD_BTC:0.0000156,USD_ETH:0.000187,USD_USDT:1.0,
+  BTC_XOF:38750000,BTC_EUR:59200,BTC_USD:64100,BTC_ETH:20.4,BTC_USDT:64100,
+  ETH_XOF:1900000,ETH_EUR:2900,ETH_USD:3145,ETH_BTC:0.049,ETH_USDT:3145,
+  USDT_XOF:606.0,USDT_EUR:0.921,USDT_USD:1.0,USDT_BTC:0.0000156,USDT_ETH:0.000318,
 };
+const FEE=0.02;
 
-function convert(){
-let raw = document.getElementById('amount').value;
-let amount = parseFloat(raw);
-
-if(!amount){
-document.getElementById('result').innerHTML="Entre un montant valide";
-return;
+function getRate(f,t){if(f===t)return 1;return R[f+'_'+t]||(1/(R[t+'_'+f]||1));}
+function fmt(n,c){
+  if(c==='XOF')return Math.round(n).toLocaleString('fr-FR')+' CFA';
+  if(c==='EUR')return n.toFixed(2)+' €';
+  if(c==='USD')return n.toFixed(2)+' $';
+  if(c==='BTC')return n.toFixed(8)+' ₿';
+  if(c==='ETH')return n.toFixed(6)+' ETH';
+  if(c==='USDT')return n.toFixed(2)+' USDT';
+  return n;
 }
 
-let from = document.getElementById('from').value;
-let to = document.getElementById('to').value;
-
-let amountInCFA = amount * ratesToCFA[from];
-let converted = amountInCFA / ratesToCFA[to];
-let fee = converted * 0.02;
-let finalAmount = converted - fee;
-
-document.getElementById('result').innerHTML =
-"Montant brut : <b>"+converted.toFixed(2)+" "+to+"</b><br>"+
-"Frais : <b>"+fee.toFixed(2)+" "+to+"</b><br>"+
-"Montant final : <b>"+finalAmount.toFixed(2)+" "+to+"</b>";
+function calcAny(aId,fId,tId,rId,feId,totId,toId){
+  const f=document.getElementById(fId).value,t=document.getElementById(tId).value;
+  const a=parseFloat(document.getElementById(aId).value)||0;
+  const rate=getRate(f,t),fee=a*FEE,net=(a-fee)*rate;
+  document.getElementById(toId).value=t==='XOF'?Math.round(net):t==='BTC'?net.toFixed(8):t==='ETH'?net.toFixed(6):net.toFixed(2);
+  document.getElementById(rId).textContent='1 '+f+' = '+rate.toFixed(f==='BTC'||f==='ETH'?2:f==='XOF'?8:4)+' '+t;
+  document.getElementById(feId).textContent=fmt(fee,f);
+  document.getElementById(totId).textContent=fmt(a,f);
 }
 
+function calc1(){calcAny('amt1','from1','tocur1','rate1','fee1','tot1','to1');}
+function calc2(){calcAny('amt2','from2','tocur2','rate2','fee2','tot2','to2');}
+function calc3(){calcAny('amt3','from3','tocur3','rate3','fee3','tot3','to3');}
+
+function swap1(){
+  const f=document.getElementById('from1'),t=document.getElementById('tocur1');
+  [f.value,t.value]=[t.value,f.value];
+  calc1();
+}
+function swap2(){
+  const f=document.getElementById('from2'),t=document.getElementById('tocur2');
+  [f.value,t.value]=[t.value,f.value];
+  calc2();
+}
+function swap3(){
+  const f=document.getElementById('from3'),t=document.getElementById('tocur3');
+  [f.value,t.value]=[t.value,f.value];
+  calc3();
+}
+
+function setMode(el,f,t){
+  document.querySelectorAll('.mtab').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('from2').value=f;
+  document.getElementById('tocur2').value=t;
+  calc2();
+}
+
+function renderRates(){
+  const pairs=[
+    {f:'EUR',t:'XOF',l:'EUR/CFA',ch:'+0.12%',up:true,cls:''},
+    {f:'USD',t:'XOF',l:'USD/CFA',ch:'-0.08%',up:false,cls:''},
+    {f:'BTC',t:'USD',l:'BTC/USD',ch:'+2.4%',up:true,cls:'btc'},
+    {f:'ETH',t:'USD',l:'ETH/USD',ch:'+1.8%',up:true,cls:'eth'},
+    {f:'USDT',t:'XOF',l:'USDT/CFA',ch:'+0.01%',up:true,cls:'usdt'},
+  ];
+  const html=pairs.map(p=>`<div class="rc ${p.cls}"><div class="rc-pair">${p.l}</div><div class="rc-val">${getRate(p.f,p.t).toFixed(p.f==='BTC'||p.f==='ETH'?0:p.t==='BTC'||p.t==='ETH'?6:2)}</div><div class="rc-ch ${p.up?'up':'dn'}">${p.up?'▲':'▼'} ${p.ch}</div></div>`).join('');
+  document.getElementById('rates-row').innerHTML=html;
+  document.getElementById('crypto-rates').innerHTML=html;
+  document.getElementById('ticker').innerHTML=[
+    {i:'₿',n:'Bitcoin',p:'64 100 $',ch:'+2.4%',up:true},
+    {i:'⟠',n:'Ethereum',p:'3 145 $',ch:'+1.8%',up:true},
+    {i:'💲',n:'USDT',p:'1.00 $',ch:'+0.01%',up:true},
+    {i:'🌍',n:'1 EUR',p:'656 CFA',ch:'+0.12%',up:true},
+    {i:'💵',n:'1 USD',p:'606 CFA',ch:'-0.08%',up:false},
+    {i:'💶',n:'EUR/USD',p:'1.085',ch:'+0.05%',up:true},
+  ].map(c=>`<div class="tp"><span class="tp-icon">${c.i}</span><span class="tp-name">${c.n}</span><span class="tp-price">${c.p}</span><span class="tp-ch ${c.up?'up':'dn'}">${c.up?'▲':'▼'} ${c.ch}</span></div>`).join('');
+}
+
+const TXS=[
+  {t:'out',i:'💱',c:'out',n:'CFA → EUR',d:"Aujourd'hui, 14h32",a:'50 000 CFA',s:'Complété'},
+  {t:'btc',i:'₿',c:'btc',n:'BTC → EUR',d:"Aujourd'hui, 11h15",a:'0.0045 BTC',s:'Complété'},
+  {t:'eth',i:'⟠',c:'eth',n:'ETH → USD',d:'Hier, 16h40',a:'0.15 ETH',s:'Complété'},
+  {t:'in',i:'💰',c:'in',n:'Rechargement Wave',d:'Hier, 09h20',a:'100 000 CFA',s:'Complété'},
+  {t:'usdt',i:'💲',c:'usdt',n:'USDT → CFA',d:'19 Mar, 14h10',a:'200 USDT',s:'Complété'},
+  {t:'out',i:'💱',c:'out',n:'CFA → USD',d:'19 Mar, 09h50',a:'30 000 CFA',s:'Complété'},
+  {t:'btc',i:'₿',c:'btc',n:'CFA → BTC',d:'18 Mar, 10h05',a:'25 000 CFA',s:'Complété'},
+  {t:'eth',i:'⟠',c:'eth',n:'USDT → ETH',d:'17 Mar, 15h30',a:'500 USDT',s:'Complété'},
+];
+
+function renderTx(id,lim){
+  const list=lim?TXS.slice(0,lim):TXS;
+  document.getElementById(id).innerHTML=list.map(x=>`<div class="tx-item"><div class="tx-ico ${x.c}">${x.i}</div><div class="tx-inf"><div class="tx-name">${x.n}</div><div class="tx-date">${x.d}</div></div><div class="tx-amt"><div class="tx-val ${x.c}">${x.t==='in'?'+ ':'- '}${x.a}</div><div class="tx-st">${x.s}</div></div></div>`).join('');
+}
+
+function openConfirm(){
+  const f=document.getElementById('from1').value,t=document.getElementById('tocur1').value;
+  const a=parseFloat(document.getElementById('amt1').value)||0;
+  const rate=getRate(f,t),fee=a*FEE,net=(a-fee)*rate;
+  document.getElementById('c-from').textContent=fmt(a,f);
+  document.getElementById('c-to').textContent=fmt(net,t);
+  document.getElementById('c-rate').textContent='1 '+f+' = '+rate.toFixed(f==='BTC'||f==='ETH'?2:f==='XOF'?8:4)+' '+t;
+  document.getElementById('c-fee').textContent=fmt(fee,f);
+  document.getElementById('c-tot').textContent=fmt(a,f);
+  document.getElementById('conf-body').style.display='block';
+  document.getElementById('succ-body').style.display='none';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('open');
+}
+
+function confirmEx(){
+  const ref='CFS'+Math.floor(Math.random()*900000+100000);
+  document.getElementById('ref-code').textContent=ref;
+  document.getElementById('conf-body').style.display='none';
+  document.getElementById('succ-body').style.display='block';
+  const a=parseFloat(document.getElementById('amt1').value)||0;
+  if(document.getElementById('from1').value==='XOF'){
+    const cur=parseInt(document.getElementById('wallet-bal').textContent.replace(/\s/g,''))||250000;
+    document.getElementById('wallet-bal').textContent=Math.max(0,cur-a).toLocaleString('fr-FR');
+  }
+}
+
+document.getElementById('modal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('modal')) closeModal();
+});
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function showAuth(t){
+  show('auth');
+  switchAuth(t);
+}
+
+function switchAuth(t){
+  document.getElementById('form-reg').style.display=t==='register'?'block':'none';
+  document.getElementById('form-log').style.display=t==='login'?'block':'none';
+  document.getElementById('tab-reg').className='a-tab'+(t==='register'?' active':'');
+  document.getElementById('tab-log').className='a-tab'+(t==='login'?' active':'');
+  document.getElementById('auth-title').textContent=t==='register'?'Créer un compte':'Connexion';
+  document.getElementById('auth-sub').textContent=t==='register'?'Rejoignez CFASwap en quelques secondes':'Content de vous revoir !';
+}
+
+function enterApp(){
+  const name=document.getElementById('reg-name')?.value||'Moussa Diallo';
+  const ini=name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)||'MD';
+  document.getElementById('av-ini').textContent=ini;
+  document.getElementById('prof-av').textContent=ini;
+  document.getElementById('prof-name').textContent=name;
+  show('app');
+  switchPage('home');
+}
+
+function switchPage(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  const nav=document.getElementById('ni-'+p);
+  if(nav) nav.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  renderRates();
+  renderTx('tx-home',4);
+  renderTx('tx-full');
+  calc1();
+  calc2();
+  calc3();
+});
 </script>
 
 </body>
