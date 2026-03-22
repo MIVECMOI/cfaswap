@@ -1,14 +1,109 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CFASwap</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <link rel="manifest" href="manifest2.json">
   <meta name="theme-color" content="#0A1A0F">
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #0A1A0F;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #FFD700;
+    }
+
+    input, select, button {
+      padding: 12px;
+      margin: 10px;
+      width: 80%;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+    }
+
+    button {
+      background: #FFD700;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 20px;
+      color: #00FFAA;
+    }
+  </style>
 </head>
+
 <body>
-  <h1>CFASwap</h1>
-  <p>Exchange CFA, USD, EUR and Bitcoin.</p>
+
+<h1>CFASwap</h1>
+
+<p>Échange CFA, USD, EUR, Bitcoin</p>
+
+<input type="number" id="amount" placeholder="Montant">
+
+<select id="from">
+  <option value="USD">USD</option>
+  <option value="CFA">CFA</option>
+</select>
+
+<select id="to">
+  <option value="CFA">CFA</option>
+  <option value="USD">USD</option>
+</select>
+
+<button onclick="convert()">Convertir</button>
+
+<h2 id="result"></h2>
+
+<button onclick="whatsapp()">Échanger maintenant</button>
+
+<script>
+function convert() {
+  let amount = document.getElementById("amount").value;
+
+  if (!amount) {
+    alert("Entre un montant");
+    return;
+  }
+
+  let rate = 600;
+
+  let result = amount * rate;
+
+  // commission 2%
+  let final = result * 0.98;
+
+  document.getElementById("result").innerText =
+    "Tu reçois : " + final.toFixed(2) + " CFA (2% frais inclus)";
+}
+
+function whatsapp() {
+  let amount = document.getElementById("amount").value;
+
+  if (!amount) {
+    alert("Entre un montant");
+    return;
+  }
+
+  let msg = "Bonjour, je souhaite effectuer un échange sur CFASwap. Montant : " + amount;
+
+  let url = "https://wa.me/22870160506?text=" + encodeURIComponent(msg);
+
+  window.open(url, "_blank");
+}
+</script>
+
 </body>
 </html>
