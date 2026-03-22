@@ -1,145 +1,904 @@
-<script>
-const R={
-  XOF_EUR:0.00152,XOF_USD:0.00165,XOF_BTC:0.00000000258,XOF_ETH:0.0000000310,XOF_USDT:0.00165,
-  EUR_XOF:655.96,EUR_USD:1.085,EUR_BTC:0.0000169,EUR_ETH:0.000203,EUR_USDT:1.085,
-  USD_XOF:606.0,USD_EUR:0.9216,USD_BTC:0.0000156,USD_ETH:0.000187,USD_USDT:1.0,
-  BTC_XOF:38750000,BTC_EUR:59200,BTC_USD:64100,BTC_ETH:20.4,BTC_USDT:64100,
-  ETH_XOF:1900000,ETH_EUR:2900,ETH_USD:3145,ETH_BTC:0.049,ETH_USDT:3145,
-  USDT_XOF:606.0,USDT_EUR:0.921,USDT_USD:1.0,USDT_BTC:0.0000156,USDT_ETH:0.000318,
-};
-const FEE=0.02;
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#D4A843">
+<meta name="description" content="CFASwap — Bureau de Change Digital. Échangez CFA, EUR, USD, Bitcoin aux taux du jour.">
+<title>CFASwap — Bureau de Change Digital</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#D4A843;--gold2:#F0C96A;--green:#1B6B47;--green2:#25A06A;
+  --green3:#0E3D28;--bg:#080E0A;--bg2:#0C1610;--surface:#111D16;
+  --surface2:#182818;--border:rgba(212,168,67,0.13);--text:#EDE8D5;
+  --muted:#7A9985;--red:#E05555;--blue:#5B9BF0;
+  --btc:#F7931A;--eth:#627EEA;--usdt:#26A17B;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;padding-bottom:85px;}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");pointer-events:none;z-index:999;}
+.glow{position:fixed;border-radius:50%;filter:blur(90px);opacity:.07;pointer-events:none;z-index:0;}
+.g1{width:500px;height:500px;background:var(--gold);top:-200px;left:-150px;}
+.g2{width:600px;height:600px;background:var(--green);bottom:-250px;right:-200px;}
+.screen{display:none;position:relative;z-index:1;}
+.screen.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-function getRate(f,t){if(f===t)return 1;return R[f+'_'+t]||(1/(R[t+'_'+f]||1));}
-function fmt(n,c){
-  if(c==='XOF')return Math.round(n).toLocaleString('fr-FR')+' CFA';
-  if(c==='EUR')return n.toFixed(2)+' €';
-  if(c==='USD')return n.toFixed(2)+' $';
-  if(c==='BTC')return n.toFixed(8)+' ₿';
-  if(c==='ETH')return n.toFixed(6)+' ETH';
-  if(c==='USDT')return n.toFixed(2)+' USDT';
+/* SPLASH */
+#splash{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:36px 22px;}
+.logo{font-family:'Syne',sans-serif;font-size:3rem;font-weight:800;color:var(--gold);margin-bottom:5px;animation:fadeUp .7s ease both;}
+.logo span{color:var(--green2);}
+.tagline{color:var(--muted);font-size:.88rem;margin-bottom:30px;animation:fadeUp .7s .1s ease both;}
+.coins-row{display:flex;gap:10px;justify-content:center;margin-bottom:28px;animation:fadeUp .7s .15s ease both;}
+.coin{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;border:2px solid rgba(255,255,255,.07);}
+.coin-cfa{background:linear-gradient(135deg,#1B6B47,#25A06A);}
+.coin-eur{background:linear-gradient(135deg,#1a3a7c,#3B6FD4);}
+.coin-usd{background:linear-gradient(135deg,#1a5c2a,#2E9E4F);}
+.coin-btc{background:linear-gradient(135deg,#7a4000,#F7931A);}
+.arrow-coins{color:var(--muted);font-size:1.1rem;display:flex;align-items:center;}
+.flags-wrap{margin-bottom:30px;animation:fadeUp .7s .2s ease both;}
+.flags-wrap p{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:9px;font-weight:600;}
+.flags-row{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
+.ftag{background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:4px 10px;font-size:.72rem;display:flex;align-items:center;gap:4px;}
+.splash-btns{display:flex;flex-direction:column;gap:10px;width:100%;max-width:310px;animation:fadeUp .7s .3s ease both;}
+.btn-p{width:100%;padding:15px;background:linear-gradient(135deg,var(--green),var(--green2));border:none;border-radius:16px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.96rem;font-weight:600;cursor:pointer;box-shadow:0 8px 26px rgba(27,107,71,.4);transition:all .2s;}
+.btn-p:hover{transform:translateY(-2px);}
+.btn-s{width:100%;padding:14px;background:transparent;border:1px solid var(--border);border-radius:16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.96rem;cursor:pointer;transition:all .2s;}
+.btn-s:hover{border-color:rgba(212,168,67,.3);color:var(--gold);}
+
+/* AUTH */
+#auth{min-height:100vh;display:flex;flex-direction:column;}
+.auth-top{padding:50px 22px 24px;background:linear-gradient(180deg,var(--bg2),transparent);}
+.back{background:var(--surface);border:none;border-radius:50%;width:37px;height:37px;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-bottom:17px;color:var(--text);font-size:.95rem;}
+.auth-top h2{font-family:'Syne',sans-serif;font-size:1.65rem;font-weight:800;margin-bottom:4px;}
+.auth-top p{color:var(--muted);font-size:.84rem;}
+.auth-body{flex:1;padding:0 22px 32px;}
+.a-tabs{display:flex;gap:4px;background:var(--surface);border-radius:12px;padding:4px;margin-bottom:22px;}
+.a-tab{flex:1;padding:9px;border:none;border-radius:9px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.87rem;font-weight:500;cursor:pointer;transition:all .2s;}
+.a-tab.active{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;}
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-weight:600;}
+.field input,.field select{width:100%;background:var(--surface);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.92rem;outline:none;transition:border-color .2s;}
+.field input:focus,.field select:focus{border-color:rgba(212,168,67,.35);}
+.field input::placeholder{color:rgba(238,232,213,.15);}
+.field select option{background:var(--surface2);}
+.ph-row{display:flex;gap:8px;}
+.ph-code{width:96px;background:var(--surface);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none;}
+.ph-code option{background:var(--surface2);}
+.ph-inp{flex:1;}
+.legal-box{background:rgba(212,168,67,.06);border:1px solid rgba(212,168,67,.14);border-radius:10px;padding:11px 13px;margin:12px 0;font-size:.75rem;color:var(--muted);line-height:1.5;}
+.legal-box strong{color:var(--gold);}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:15px 16px 12px;position:sticky;top:0;z-index:50;background:rgba(8,14,10,.93);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.topbar-logo{font-family:'Syne',sans-serif;font-size:1.28rem;font-weight:800;color:var(--gold);}
+.topbar-logo span{color:var(--green2);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.rates-badge{background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:5px 10px;font-size:.7rem;color:var(--green2);font-weight:600;display:flex;align-items:center;gap:4px;}
+.rates-dot{width:6px;height:6px;background:var(--green2);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--gold));display:flex;align-items:center;justify-content:center;font-size:.73rem;font-weight:700;color:#fff;cursor:pointer;}
+
+.page{display:none;}.page.active{display:block;}
+
+/* WALLET */
+.wallet-wrap{padding:14px 14px 0;}
+.wallet-card{background:linear-gradient(135deg,var(--green3),var(--green) 55%,#1F4A32);border-radius:18px;padding:19px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.07);}
+.wallet-card::before{content:'';position:absolute;top:-50px;right:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.04);}
+.wl{font-size:.7rem;color:rgba(255,255,255,.5);font-weight:500;margin-bottom:5px;}
+.wa{font-family:'Syne',sans-serif;font-size:2.1rem;font-weight:800;color:#fff;line-height:1;margin-bottom:2px;}
+.wc{font-size:.73rem;color:rgba(255,255,255,.43);margin-bottom:15px;}
+.w-acts{display:flex;gap:6px;}
+.w-act{flex:1;padding:8px 4px;background:rgba(255,255,255,.1);border-radius:9px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;border:none;transition:background .2s;}
+.w-act:hover{background:rgba(255,255,255,.18);}
+
+/* LIVE RATES */
+.sec{padding:16px 14px 0;}
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
+.sec-title{font-family:'Syne',sans-serif;font-size:1.08rem;font-weight:700;}
+.see-all{font-size:.76rem;color:var(--gold);cursor:pointer;font-weight:500;}
+.rates-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;}
+.rates-row::-webkit-scrollbar{display:none;}
+.rc{min-width:128px;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:12px;flex-shrink:0;}
+.rc-pair{font-size:.67rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+.rc-val{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:2px;}
+.rc-src{font-size:.62rem;color:var(--muted);}
+.up{color:#4ade80;}.dn{color:var(--red);}
+.loading-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(212,168,67,.3);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:4px;}
+
+/* EXCHANGE FORM */
+.conv-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px;margin:0 14px;}
+.ib-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:6px;}
+.ci{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:11px 12px;transition:border-color .2s;margin-bottom:4px;}
+.ci:focus-within{border-color:rgba(212,168,67,.35);}
+.ci input{flex:1;background:none;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:1.25rem;color:var(--text);font-weight:600;min-width:0;}
+.ci input::placeholder{color:rgba(238,232,213,.1);}
+.cbadge{display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:6px 10px;cursor:pointer;white-space:nowrap;}
+.cbadge select{background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-weight:600;font-size:.83rem;cursor:pointer;}
+.cbadge select option{background:var(--surface2);}
+.swap-mid{display:flex;justify-content:center;padding:6px 0;position:relative;}
+.swap-mid::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(255,255,255,.04);}
+.swap-btn{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;color:var(--bg);font-size:.88rem;cursor:pointer;position:relative;z-index:1;transition:transform .3s;border:none;}
+.swap-btn:hover{transform:rotate(180deg);}
+.breakdown{background:var(--bg2);border-radius:10px;padding:11px 13px;margin-top:11px;}
+.brow{display:flex;justify-content:space-between;padding:4px 0;font-size:.8rem;}
+.brow:not(:last-child){border-bottom:1px solid rgba(255,255,255,.04);}
+.bl{color:var(--muted);}.bv{color:var(--text);font-weight:500;}
+.brow.tot .bv{color:var(--gold);font-weight:700;}
+.brow.fee .bv{color:#4ade80;}
+.rate-source{font-size:.65rem;color:var(--muted);margin-top:6px;text-align:center;}
+.btn-ex{width:100%;padding:13px;margin-top:12px;background:linear-gradient(135deg,var(--green),var(--green2));border:none;border-radius:11px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.93rem;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 8px 20px rgba(27,107,71,.33);}
+.btn-ex:hover{transform:translateY(-2px);}
+.btn-ex:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+/* MOBILE MONEY */
+.mm-title{font-size:.78rem;color:var(--muted);text-align:center;margin:14px 0 10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;}
+.mm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 14px;}
+.mm-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 7px;text-align:center;cursor:pointer;transition:all .2s;}
+.mm-card:hover,.mm-card.selected{border-color:rgba(212,168,67,.4);background:var(--surface2);}
+.mm-card.selected{border-color:var(--gold);}
+.mm-icon{font-size:1.5rem;margin-bottom:5px;}
+.mm-name{font-size:.7rem;font-weight:600;margin-bottom:1px;}
+.mm-pays{font-size:.6rem;color:var(--muted);}
+
+/* TX */
+.tx-list{padding:0 14px;}
+.tx-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;}
+.tx-item:hover{background:rgba(255,255,255,.02);}
+.tx-ico{width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.tx-ico.out{background:rgba(212,168,67,.1);}
+.tx-ico.in{background:rgba(74,222,128,.1);}
+.tx-ico.btc{background:rgba(247,147,26,.1);}
+.tx-inf{flex:1;min-width:0;}
+.tx-name{font-size:.85rem;font-weight:600;margin-bottom:1px;}
+.tx-date{font-size:.68rem;color:var(--muted);}
+.tx-amt{text-align:right;}
+.tx-val{font-size:.85rem;font-weight:700;}
+.tx-val.out{color:var(--gold);}.tx-val.in{color:#4ade80;}
+.tx-val.btc{color:var(--btc);}
+.tx-st{font-size:.64rem;color:var(--muted);margin-top:1px;}
+.tx-ref{font-size:.6rem;color:var(--muted);font-family:monospace;}
+
+/* COUNTRIES */
+.cg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:0 14px;}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;align-items:center;gap:9px;cursor:pointer;transition:all .2s;}
+.cc:hover{border-color:rgba(212,168,67,.2);}
+.cf{font-size:1.5rem;}
+.ci-i strong{display:block;font-size:.83rem;font-weight:600;}
+.ci-i span{font-size:.66rem;color:var(--muted);}
+.c-dot{margin-left:auto;width:6px;height:6px;border-radius:50%;background:#4ade80;flex-shrink:0;}
+
+/* NOTICES */
+.notice{margin:12px 14px 0;border-radius:11px;padding:11px 13px;display:flex;align-items:flex-start;gap:9px;}
+.notice.blue{background:rgba(91,155,240,.07);border:1px solid rgba(91,155,240,.17);}
+.notice.green{background:rgba(27,107,71,.08);border:1px solid rgba(27,107,71,.2);}
+.notice-txt{font-size:.76rem;color:var(--muted);line-height:1.5;}
+.notice-txt strong{color:var(--blue);}
+.notice.green .notice-txt strong{color:var(--green2);}
+.nl{color:var(--blue);font-weight:600;font-size:.74rem;text-decoration:none;}
+.leg-note{margin:12px 14px 0;background:rgba(212,168,67,.05);border:1px solid rgba(212,168,67,.12);border-radius:11px;padding:11px 13px;}
+.leg-note p{font-size:.73rem;color:var(--muted);line-height:1.6;}
+.leg-note strong{color:var(--gold);}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(8,14,10,.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:6px 0 max(6px,env(safe-area-inset-bottom));}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 3px;cursor:pointer;font-size:.62rem;color:var(--muted);font-weight:500;transition:color .2s;border:none;background:none;font-family:'DM Sans',sans-serif;}
+.ni.active{color:var(--gold);}
+.ni-icon{font-size:1.18rem;}
+.ni-dot{width:3px;height:3px;border-radius:50%;background:var(--gold);opacity:0;transition:opacity .2s;}
+.ni.active .ni-dot{opacity:1;}
+
+/* MODAL - CONFIRM */
+.modal-ov{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;}
+.modal-ov.open{display:flex;}
+.modal-sh{background:var(--surface);border-radius:22px 22px 0 0;padding:22px 20px 36px;width:100%;max-width:480px;animation:slideUp .28s ease;border:1px solid var(--border);border-bottom:none;max-height:90vh;overflow-y:auto;}
+.sh-handle{width:35px;height:3px;background:rgba(255,255,255,.12);border-radius:2px;margin:0 auto 18px;}
+.sh-title{font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;margin-bottom:5px;}
+.sh-sub{color:var(--muted);font-size:.8rem;margin-bottom:18px;line-height:1.5;}
+
+/* TRANSACTION FORM */
+.tx-form{background:var(--bg2);border-radius:14px;padding:16px;margin-bottom:16px;}
+.tx-form-title{font-size:.78rem;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;}
+.form-row{margin-bottom:11px;}
+.form-row label{display:block;font-size:.7rem;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;}
+.form-row input,.form-row select{width:100%;background:var(--surface);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s;}
+.form-row input:focus{border-color:rgba(212,168,67,.35);}
+.form-row input::placeholder{color:rgba(238,232,213,.2);}
+.form-row select option{background:var(--surface2);}
+
+/* AMOUNT SUMMARY */
+.amt-summary{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;}
+.amt-row{display:flex;justify-content:space-between;padding:5px 0;font-size:.85rem;}
+.amt-row:not(:last-child){border-bottom:1px solid rgba(255,255,255,.05);}
+.amt-label{color:var(--muted);}
+.amt-value{font-weight:600;}
+.amt-row.highlight .amt-value{color:var(--gold);font-size:.95rem;font-weight:700;}
+.amt-row.fee-row .amt-value{color:#4ade80;}
+.cfaswap-fee-note{font-size:.68rem;color:var(--muted);margin-top:6px;line-height:1.4;}
+.cfaswap-fee-note strong{color:var(--gold);}
+
+/* MM SELECTOR */
+.mm-selector{margin-bottom:14px;}
+.mm-selector-title{font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;}
+.mm-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.mm-opt{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer;transition:all .2s;}
+.mm-opt:hover,.mm-opt.sel{border-color:rgba(212,168,67,.5);background:var(--surface2);}
+.mm-opt.sel{border-color:var(--gold);}
+.mm-opt-icon{font-size:1.3rem;margin-bottom:4px;}
+.mm-opt-name{font-size:.68rem;font-weight:600;}
+
+/* PHONE WALLET */
+.wallet-input{background:var(--surface);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;width:100%;margin-top:8px;}
+.wallet-input::placeholder{color:rgba(238,232,213,.2);}
+
+/* SUCCESS */
+.succ{text-align:center;}
+.succ-ring{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green2));display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 14px;box-shadow:0 0 36px rgba(27,107,71,.4);}
+.ref-box{display:inline-block;background:var(--bg2);border:1px solid rgba(212,168,67,.25);border-radius:9px;padding:8px 16px;color:var(--gold);font-weight:700;letter-spacing:.12em;font-size:.92rem;margin:8px 0 14px;font-family:monospace;}
+.tx-detail-box{background:var(--bg2);border-radius:12px;padding:14px;margin-bottom:16px;text-align:left;}
+.tx-detail-row{display:flex;justify-content:space-between;padding:4px 0;font-size:.78rem;border-bottom:1px solid rgba(255,255,255,.04);}
+.tx-detail-row:last-child{border-bottom:none;}
+.tdl{color:var(--muted);}
+.tdv{color:var(--text);font-weight:500;font-size:.76rem;}
+
+/* PROFILE */
+.prof-wrap{padding:14px;}
+.prof-card{background:var(--surface);border:1px solid var(--border);border-radius:17px;padding:19px;text-align:center;margin-bottom:14px;}
+.prof-av{width:63px;height:63px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--gold));display:flex;align-items:center;justify-content:center;font-size:1.45rem;font-weight:700;color:#fff;margin:0 auto 10px;}
+.prof-name{font-family:'Syne',sans-serif;font-size:1.18rem;font-weight:800;margin-bottom:3px;}
+.prof-email{font-size:.78rem;color:var(--muted);}
+.prof-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);border-radius:100px;padding:4px 11px;font-size:.7rem;color:#4ade80;font-weight:600;margin-top:8px;}
+.menu-list{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.mi{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s;}
+.mi:last-child{border-bottom:none;}.mi:hover{background:rgba(255,255,255,.03);}
+.mi-ico{width:33px;height:33px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.88rem;}
+.mi-ico.g{background:rgba(27,107,71,.2);}.mi-ico.gd{background:rgba(212,168,67,.12);}
+.mi-ico.b{background:rgba(91,155,240,.12);}.mi-ico.r{background:rgba(224,85,85,.12);}
+.mi-ico.btc{background:rgba(247,147,26,.12);}
+.mi-txt{flex:1;}
+.mi-txt strong{display:block;font-size:.85rem;font-weight:600;}
+.mi-txt span{font-size:.7rem;color:var(--muted);}
+.mi-arr{color:var(--muted);font-size:.83rem;}
+
+/* TX DETAIL MODAL */
+.tx-detail-modal{background:var(--surface);border-radius:22px 22px 0 0;padding:22px 20px 36px;width:100%;max-width:480px;animation:slideUp .28s ease;border:1px solid var(--border);border-bottom:none;}
+.btns-row{display:flex;gap:8px;}
+.btn-cancel{flex:1;padding:12px;border:1px solid var(--border);border-radius:11px;background:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;}
+.btn-confirm{flex:2;padding:12px;background:linear-gradient(135deg,var(--green),var(--green2));border:none;border-radius:11px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;}
+.btn-confirm:disabled{opacity:.5;cursor:not-allowed;}
+</style>
+</head>
+<body>
+<div class="glow g1"></div><div class="glow g2"></div>
+
+<!-- SPLASH -->
+<div id="splash" class="screen active">
+  <div class="logo">CFA<span>Swap</span></div>
+  <div class="tagline">Bureau de Change Digital — Taux du jour en temps réel</div>
+  <div class="coins-row">
+    <div class="coin coin-cfa">🌍</div>
+    <div class="arrow-coins">⇄</div>
+    <div class="coin coin-eur">💶</div>
+    <div class="arrow-coins">⇄</div>
+    <div class="coin coin-usd">💵</div>
+    <div class="arrow-coins">⇄</div>
+    <div class="coin coin-btc">₿</div>
+  </div>
+  <div class="flags-wrap">
+    <p>10 pays — Afrique de l'Ouest & Centrale</p>
+    <div class="flags-row">
+      <div class="ftag">🇹🇬 Togo</div><div class="ftag">🇨🇬 Congo</div><div class="ftag">🇨🇩 RD Congo</div>
+      <div class="ftag">🇬🇦 Gabon</div><div class="ftag">🇨🇲 Cameroun</div><div class="ftag">🇨🇮 Côte d'Ivoire</div>
+      <div class="ftag">🇧🇯 Bénin</div><div class="ftag">🇧🇫 Burkina</div><div class="ftag">🇲🇱 Mali</div><div class="ftag">🇸🇳 Sénégal</div>
+    </div>
+  </div>
+  <div class="splash-btns">
+    <button class="btn-p" onclick="showAuth('register')">Créer un compte gratuit</button>
+    <button class="btn-s" onclick="showAuth('login')">J'ai déjà un compte</button>
+  </div>
+</div>
+
+<!-- AUTH -->
+<div id="auth" class="screen">
+  <div class="auth-top">
+    <button class="back" onclick="show('splash')">←</button>
+    <h2 id="auth-title">Créer un compte</h2>
+    <p id="auth-sub">Rejoignez CFASwap en quelques secondes</p>
+  </div>
+  <div class="auth-body">
+    <div class="a-tabs">
+      <button class="a-tab active" id="tab-reg" onclick="switchAuth('register')">Inscription</button>
+      <button class="a-tab" id="tab-log" onclick="switchAuth('login')">Connexion</button>
+    </div>
+    <div id="form-reg">
+      <div class="field"><label>Nom complet</label><input type="text" id="reg-name" placeholder="Ex: Moussa Diallo"></div>
+      <div class="field"><label>E-mail</label><input type="email" id="reg-email" placeholder="email@exemple.com"></div>
+      <div class="field"><label>Téléphone</label>
+        <div class="ph-row">
+          <select class="ph-code" id="reg-phone-code">
+            <option>🇹🇬 +228</option><option>🇨🇬 +242</option><option>🇨🇩 +243</option><option>🇬🇦 +241</option>
+            <option>🇨🇲 +237</option><option>🇨🇮 +225</option><option>🇧🇯 +229</option><option>🇧🇫 +226</option>
+            <option>🇲🇱 +223</option><option>🇸🇳 +221</option><option>🇫🇷 +33</option><option>🇺🇸 +1</option>
+          </select>
+          <input type="tel" class="ph-inp" id="reg-phone" placeholder="XX XX XX XX">
+        </div>
+      </div>
+      <div class="field"><label>Pays de résidence</label>
+        <select id="reg-country">
+          <option>Togo</option><option>Congo (Brazzaville)</option><option>Congo (Kinshasa)</option><option>Gabon</option>
+          <option>Cameroun</option><option>Côte d'Ivoire</option><option>Bénin</option><option>Burkina Faso</option>
+          <option>Mali</option><option>Sénégal</option><option>France</option><option>USA</option><option>Autre</option>
+        </select>
+      </div>
+      <div class="field"><label>Mot de passe</label><input type="password" placeholder="Minimum 8 caractères"></div>
+      <div class="legal-box"><strong>⚖️ Conformité :</strong> CFASwap respecte BCEAO, BEAC et FinCEN USA. KYC requis au-delà de 500 000 CFA. Frais de 2% sur chaque échange.</div>
+      <button class="btn-p" onclick="enterApp()">Créer mon compte →</button>
+    </div>
+    <div id="form-log" style="display:none">
+      <div class="field"><label>E-mail ou téléphone</label><input type="text" placeholder="email@exemple.com"></div>
+      <div class="field"><label>Mot de passe</label><input type="password" placeholder="Votre mot de passe"></div>
+      <p style="font-size:.77rem;color:var(--gold);text-align:right;margin-bottom:15px;cursor:pointer;">Mot de passe oublié ?</p>
+      <button class="btn-p" onclick="enterApp()">Se connecter →</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="screen">
+  <div class="topbar">
+    <div class="topbar-logo">CFA<span>Swap</span></div>
+    <div class="topbar-right">
+      <div class="rates-badge"><div class="rates-dot"></div><span id="rate-status">Chargement...</span></div>
+      <div class="av" id="av-ini" onclick="switchPage('profile')">MD</div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div id="page-home" class="page active">
+    <div class="wallet-wrap">
+      <div class="wallet-card">
+        <div class="wl">Solde disponible</div>
+        <div class="wa" id="wallet-bal">250 000</div>
+        <div class="wc">Francs CFA (XOF)</div>
+        <div class="w-acts">
+          <button class="w-act" onclick="switchPage('exchange')">⇄ Échanger</button>
+          <button class="w-act">↑ Envoyer</button>
+          <button class="w-act">↓ Recharger</button>
+          <button class="w-act" onclick="switchPage('exchange')" style="color:var(--btc)">₿ Crypto</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notice blue" style="margin-top:12px;">
+      <div style="font-size:1rem;flex-shrink:0;margin-top:1px;">🛡️</div>
+      <div class="notice-txt"><strong>Vérifiez votre identité</strong> pour accéder aux échanges illimités. <a class="nl" href="#">Démarrer →</a></div>
+    </div>
+
+    <!-- LIVE RATES -->
+    <div class="sec">
+      <div class="sec-head"><div class="sec-title">Taux du jour</div><div class="see-all" id="refresh-btn" onclick="loadRates()">↻ Actualiser</div></div>
+      <div class="rates-row" id="rates-row"><div style="padding:10px;color:var(--muted);font-size:.8rem;"><span class="loading-spinner"></span>Chargement des taux...</div></div>
+    </div>
+
+    <!-- QUICK CONVERT -->
+    <div class="sec">
+      <div class="sec-head"><div class="sec-title">Convertir rapidement</div><div class="see-all" onclick="switchPage('exchange')">Échange complet →</div></div>
+    </div>
+    <div class="conv-card">
+      <div class="ib-label">Vous avez</div>
+      <div class="ci"><input type="number" id="amt1" value="50000" oninput="calc1()" placeholder="0">
+        <div class="cbadge"><select id="from1" onchange="calc1()">
+          <option value="XOF">🌍 CFA</option><option value="EUR">💶 EUR</option>
+          <option value="USD">💵 USD</option><option value="BTC">₿ BTC</option>
+          <option value="ETH">⟠ ETH</option><option value="USDT">💲 USDT</option>
+        </select></div>
+      </div>
+      <div class="swap-mid"><button class="swap-btn" onclick="swap1()">⇅</button></div>
+      <div class="ib-label">Vous recevez</div>
+      <div class="ci"><input type="number" id="to1" readonly placeholder="0">
+        <div class="cbadge"><select id="tocur1" onchange="calc1()">
+          <option value="EUR">💶 EUR</option><option value="USD">💵 USD</option>
+          <option value="XOF">🌍 CFA</option><option value="BTC">₿ BTC</option>
+          <option value="ETH">⟠ ETH</option><option value="USDT">💲 USDT</option>
+        </select></div>
+      </div>
+      <div class="breakdown">
+        <div class="brow"><span class="bl">Taux du jour</span><span class="bv" id="rate1">—</span></div>
+        <div class="brow fee"><span class="bl">Frais CFASwap (2%)</span><span class="bv" id="fee1">—</span></div>
+        <div class="brow tot"><span class="bl">Total à payer</span><span class="bv" id="tot1">—</span></div>
+      </div>
+      <div class="rate-source" id="rate-source1">Source : Open Exchange Rates</div>
+      <button class="btn-ex" onclick="openExchange()">Procéder à l'échange →</button>
+    </div>
+
+    <!-- MOBILE MONEY -->
+    <div class="sec"><div class="sec-head"><div class="sec-title">Retrait Mobile Money</div><div class="see-all">Tout</div></div></div>
+    <div class="mm-grid">
+      <div class="mm-card"><div class="mm-icon">🟡</div><div class="mm-name">Wave</div><div class="mm-pays">SN, CI, ML, BF</div></div>
+      <div class="mm-card"><div class="mm-icon">🟠</div><div class="mm-name">Orange Money</div><div class="mm-pays">SN, CI, ML, CM</div></div>
+      <div class="mm-card"><div class="mm-icon">🔵</div><div class="mm-name">MTN MoMo</div><div class="mm-pays">CI, CM, BJ, CG</div></div>
+      <div class="mm-card"><div class="mm-icon">🟢</div><div class="mm-name">Airtel Money</div><div class="mm-pays">CG, GA, CD</div></div>
+      <div class="mm-card"><div class="mm-icon">🔴</div><div class="mm-name">Moov Money</div><div class="mm-pays">TG, BJ, BF</div></div>
+      <div class="mm-card"><div class="mm-icon">🟣</div><div class="mm-name">T-Money</div><div class="mm-pays">Togo</div></div>
+    </div>
+
+    <div class="sec" style="margin-bottom:12px;"><div class="sec-head"><div class="sec-title">Récent</div><div class="see-all" onclick="switchPage('history')">Tout →</div></div></div>
+    <div class="tx-list" id="tx-home"></div>
+  </div>
+
+  <!-- EXCHANGE PAGE -->
+  <div id="page-exchange" class="page">
+    <div class="sec" style="padding-top:20px;">
+      <div class="sec-head"><div class="sec-title">Échange de devises</div><div class="see-all" id="refresh-btn2" onclick="loadRates()">↻ Taux live</div></div>
+    </div>
+    <div class="conv-card" style="margin-top:0;">
+      <div class="ib-label">Vous avez</div>
+      <div class="ci"><input type="number" id="amt2" value="100000" oninput="calc2()" placeholder="0">
+        <div class="cbadge"><select id="from2" onchange="calc2()">
+          <option value="XOF">🌍 CFA</option><option value="EUR">💶 EUR</option>
+          <option value="USD">💵 USD</option><option value="BTC">₿ BTC</option>
+          <option value="ETH">⟠ ETH</option><option value="USDT">💲 USDT</option>
+        </select></div>
+      </div>
+      <div class="swap-mid"><button class="swap-btn" onclick="swap2()">⇅</button></div>
+      <div class="ib-label">Vous recevez</div>
+      <div class="ci"><input type="number" id="to2" readonly placeholder="0">
+        <div class="cbadge"><select id="tocur2" onchange="calc2()">
+          <option value="EUR">💶 EUR</option><option value="USD">💵 USD</option>
+          <option value="XOF">🌍 CFA</option><option value="BTC">₿ BTC</option>
+          <option value="ETH">⟠ ETH</option><option value="USDT">💲 USDT</option>
+        </select></div>
+      </div>
+      <div class="breakdown">
+        <div class="brow"><span class="bl">Taux du jour</span><span class="bv" id="rate2">—</span></div>
+        <div class="brow fee"><span class="bl">Frais CFASwap (2%)</span><span class="bv" id="fee2">—</span></div>
+        <div class="brow tot"><span class="bl">Total à payer</span><span class="bv" id="tot2">—</span></div>
+      </div>
+      <div class="rate-source" id="rate-source2">Source : Open Exchange Rates</div>
+      <button class="btn-ex" id="btn-exchange2" onclick="openExchange()">Procéder à l'échange →</button>
+    </div>
+    <div class="leg-note" style="margin-bottom:20px;">
+      <p>🔒 <strong>Sécurité SSL 256-bit.</strong> Conformité BCEAO, BEAC et FinCEN USA. Les frais de 2% sont automatiquement transférés au compte CFASwap.</p>
+    </div>
+  </div>
+
+  <!-- HISTORY PAGE -->
+  <div id="page-history" class="page">
+    <div class="sec" style="padding-top:20px;margin-bottom:12px;"><div class="sec-head"><div class="sec-title">Historique</div></div></div>
+    <div class="tx-list" id="tx-full"></div>
+  </div>
+
+  <!-- COUNTRIES PAGE -->
+  <div id="page-countries" class="page">
+    <div class="sec" style="padding-top:20px;margin-bottom:12px;"><div class="sec-head"><div class="sec-title">Nos 10 pays</div></div></div>
+    <div class="cg">
+      <div class="cc"><div class="cf">🇹🇬</div><div class="ci-i"><strong>Togo</strong><span>XOF · Moov, T-Money</span></div><div class="c-dot"></div></div>
+      <div class="cc"><div class="cf">🇨🇬</div><div class="ci-i"><strong>Congo</strong><span>XAF · MTN, Airtel</span></div><div class="c-dot"></div></div>
+      <div class="cc"><div class="cf">🇨🇩</div><div class="ci-i"><strong>RD Congo</strong><span>CDF · Airtel, Orange</span></div><div class="c-dot"></div></div>
+      <div class="cc"><div class="cf">🇬🇦</div><div class="ci-i"><strong>Gabon</strong><span>XAF · Airtel, Moov</span></div><div class="c-dot"></div></div>
+      <div class="cc"><div class="cf">🇨🇲</div><div class="ci-i"><strong>Cameroun</strong><span>XAF · MTN, Orange</span></div><div class="c-dot"></div></div>
+      <div class="cc"><div class="cf">🇨🇮</div><div class="ci-i"><strong>Côte d'Ivoire</strong><span>XOF · Wave, Orange</span></div><div class="c-dot"></div></div>
+      <div class="cc"><div class="cf">🇧🇯</div><div class="ci-i"><strong>Bénin</strong><span>XOF · MTN, Moov</span></div><div class="c-dot"></div></div>
+      <div class="cc"><div class="cf">🇧🇫</div><div class="ci-i"><strong>Burkina Faso</strong><span>XOF · Orange, Moov</span></div><div class="c-dot"></div></div>
+      <div class="cc"><div class="cf">🇲🇱</div><div class="ci-i"><strong>Mali</strong><span>XOF · Orange, Moov</span></div><div class="c-dot"></div></div>
+      <div class="cc"><div class="cf">🇸🇳</div><div class="ci-i"><strong>Sénégal</strong><span>XOF · Wave, Orange</span></div><div class="c-dot"></div></div>
+    </div>
+  </div>
+
+  <!-- PROFILE PAGE -->
+  <div id="page-profile" class="page">
+    <div class="prof-wrap">
+      <div class="prof-card">
+        <div class="prof-av" id="prof-av">MD</div>
+        <div class="prof-name" id="prof-name">Moussa Diallo</div>
+        <div class="prof-email" id="prof-email">moussa@email.com</div>
+        <div class="prof-badge">✓ Compte vérifié</div>
+      </div>
+      <div class="menu-list">
+        <div class="mi"><div class="mi-ico g">🪪</div><div class="mi-txt"><strong>Vérification KYC</strong><span>CNI, passeport, justificatif</span></div><span class="mi-arr">›</span></div>
+        <div class="mi"><div class="mi-ico gd">💳</div><div class="mi-txt"><strong>Moyens de paiement</strong><span>Mobile Money, virement, carte</span></div><span class="mi-arr">›</span></div>
+        <div class="mi"><div class="mi-ico btc">₿</div><div class="mi-txt"><strong>Wallet Crypto</strong><span>BTC, ETH, USDT</span></div><span class="mi-arr">›</span></div>
+        <div class="mi"><div class="mi-ico b">🔔</div><div class="mi-txt"><strong>Alertes taux</strong><span>Notif quand le taux est favorable</span></div><span class="mi-arr">›</span></div>
+        <div class="mi"><div class="mi-ico g">🌐</div><div class="mi-txt"><strong>Langue</strong><span>Français, English, Wolof</span></div><span class="mi-arr">›</span></div>
+        <div class="mi"><div class="mi-ico b">⚖️</div><div class="mi-txt"><strong>CGU & Confidentialité</strong><span>Mentions légales</span></div><span class="mi-arr">›</span></div>
+        <div class="mi" onclick="show('splash')"><div class="mi-ico r">🚪</div><div class="mi-txt"><strong>Déconnexion</strong></div><span class="mi-arr">›</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav">
+    <button class="ni active" id="ni-home" onclick="switchPage('home')"><span class="ni-icon">🏠</span><span>Accueil</span><div class="ni-dot"></div></button>
+    <button class="ni" id="ni-exchange" onclick="switchPage('exchange')"><span class="ni-icon">💱</span><span>Échanger</span><div class="ni-dot"></div></button>
+    <button class="ni" id="ni-countries" onclick="switchPage('countries')"><span class="ni-icon">🌍</span><span>Pays</span><div class="ni-dot"></div></button>
+    <button class="ni" id="ni-history" onclick="switchPage('history')"><span class="ni-icon">📋</span><span>Historique</span><div class="ni-dot"></div></button>
+    <button class="ni" id="ni-profile" onclick="switchPage('profile')"><span class="ni-icon">👤</span><span>Profil</span><div class="ni-dot"></div></button>
+  </div>
+</div>
+
+<!-- EXCHANGE MODAL -->
+<div class="modal-ov" id="modal-exchange">
+  <div class="modal-sh">
+    <div class="sh-handle"></div>
+    <div id="exchange-form-body">
+      <div class="sh-title">Finaliser l'échange</div>
+      <div class="sh-sub">Remplissez vos informations. Toutes les transactions sont tracées et sécurisées.</div>
+
+      <!-- AMOUNT SUMMARY -->
+      <div class="amt-summary">
+        <div class="amt-row"><span class="amt-label">Vous envoyez</span><span class="amt-value" id="modal-send">—</span></div>
+        <div class="amt-row"><span class="amt-label">Taux du jour</span><span class="amt-value" id="modal-rate">—</span></div>
+        <div class="amt-row fee-row"><span class="amt-label">Frais CFASwap (2%)</span><span class="amt-value" id="modal-fee">—</span></div>
+        <div class="amt-row highlight"><span class="amt-label">Vous recevez</span><span class="amt-value" id="modal-receive">—</span></div>
+        <div class="cfaswap-fee-note">⚡ Les frais de 2% sont automatiquement transférés au <strong>compte bancaire CFASwap</strong> à chaque échange.</div>
+      </div>
+
+      <!-- PERSONAL INFO -->
+      <div class="tx-form">
+        <div class="tx-form-title">📋 Vos informations (traçabilité)</div>
+        <div class="form-row"><label>Nom complet *</label><input type="text" id="tx-name" placeholder="Votre nom complet"></div>
+        <div class="form-row"><label>Email *</label><input type="email" id="tx-email" placeholder="votre@email.com"></div>
+        <div class="form-row"><label>Téléphone *</label><input type="tel" id="tx-phone" placeholder="+228 XX XX XX XX"></div>
+        <div class="form-row"><label>Pays</label>
+          <select id="tx-country">
+            <option>Togo</option><option>Congo</option><option>RD Congo</option><option>Gabon</option>
+            <option>Cameroun</option><option>Côte d'Ivoire</option><option>Bénin</option>
+            <option>Burkina Faso</option><option>Mali</option><option>Sénégal</option><option>Autre</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- MOBILE MONEY SELECTOR -->
+      <div class="mm-selector">
+        <div class="mm-selector-title">📱 Où recevoir vos fonds ?</div>
+        <div class="mm-opts">
+          <div class="mm-opt" onclick="selectMM(this,'Wave')"><div class="mm-opt-icon">🟡</div><div class="mm-opt-name">Wave</div></div>
+          <div class="mm-opt" onclick="selectMM(this,'Orange Money')"><div class="mm-opt-icon">🟠</div><div class="mm-opt-name">Orange</div></div>
+          <div class="mm-opt" onclick="selectMM(this,'MTN MoMo')"><div class="mm-opt-icon">🔵</div><div class="mm-opt-name">MTN</div></div>
+          <div class="mm-opt" onclick="selectMM(this,'Airtel Money')"><div class="mm-opt-icon">🟢</div><div class="mm-opt-name">Airtel</div></div>
+          <div class="mm-opt" onclick="selectMM(this,'Moov Money')"><div class="mm-opt-icon">🔴</div><div class="mm-opt-name">Moov</div></div>
+          <div class="mm-opt" onclick="selectMM(this,'T-Money')"><div class="mm-opt-icon">🟣</div><div class="mm-opt-name">T-Money</div></div>
+        </div>
+        <input type="tel" class="wallet-input" id="wallet-phone" placeholder="Numéro de téléphone du wallet Mobile Money">
+      </div>
+
+      <div class="btns-row">
+        <button class="btn-cancel" onclick="closeModal('modal-exchange')">Annuler</button>
+        <button class="btn-confirm" id="btn-confirm-exchange" onclick="confirmExchange()">Confirmer l'échange ✓</button>
+      </div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div id="exchange-success" style="display:none" class="succ">
+      <div class="succ-ring">✓</div>
+      <div class="sh-title" style="color:var(--text)">Échange initié !</div>
+      <p style="color:var(--muted);font-size:.82rem;margin:5px 0 4px">Référence de transaction :</p>
+      <div class="ref-box" id="succ-ref"></div>
+      <div class="tx-detail-box" id="succ-details"></div>
+      <p style="color:var(--muted);font-size:.75rem;margin-bottom:20px;line-height:1.5">
+        ✅ Confirmation envoyée par email et SMS<br>
+        ⏱️ Fonds disponibles sous 30 minutes<br>
+        💰 Frais CFASwap transférés automatiquement
+      </p>
+      <button class="btn-p" onclick="closeModal('modal-exchange');switchPage('history')">Voir l'historique</button>
+    </div>
+  </div>
+</div>
+
+<!-- TX DETAIL MODAL -->
+<div class="modal-ov" id="modal-tx">
+  <div class="modal-sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title">Détails de la transaction</div>
+    <div class="tx-detail-box" id="tx-detail-content" style="margin-top:14px;"></div>
+    <button class="btn-p" onclick="closeModal('modal-tx')" style="margin-top:14px;">Fermer</button>
+  </div>
+</div>
+
+<script>
+// ===== TAUX EN TEMPS REEL =====
+// Taux de secours (fallback) si l'API ne répond pas
+const FALLBACK_RATES = {
+  EUR_XOF:655.96, USD_XOF:606.0, BTC_XOF:38750000, ETH_XOF:1900000, USDT_XOF:606.0,
+  XOF_EUR:0.00152, XOF_USD:0.00165, XOF_BTC:0.0000000258, XOF_ETH:0.000000526, XOF_USDT:0.00165,
+  EUR_USD:1.085, EUR_BTC:0.0000169, EUR_ETH:0.000203, EUR_USDT:1.085,
+  USD_EUR:0.9216, USD_BTC:0.0000156, USD_ETH:0.000187, USD_USDT:1.0,
+  BTC_USD:64100, BTC_EUR:59200, BTC_ETH:20.4, BTC_USDT:64100,
+  ETH_USD:3145, ETH_EUR:2900, ETH_BTC:0.049, ETH_USDT:3145,
+  USDT_USD:1.0, USDT_EUR:0.921, USDT_XOF:606.0, USDT_BTC:0.0000156, USDT_ETH:0.000318,
+};
+
+let LIVE_RATES = {...FALLBACK_RATES};
+let ratesLoaded = false;
+let lastUpdate = null;
+const FEE = 0.02;
+
+async function loadRates() {
+  document.getElementById('rate-status').innerHTML = '<span class="loading-spinner"></span>Live';
+  try {
+    // API gratuite Open Exchange Rates (free tier)
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    const data = await res.json();
+    if(data && data.rates) {
+      const r = data.rates;
+      // Calcul depuis USD comme base
+      LIVE_RATES.USD_EUR = 1/r.EUR;
+      LIVE_RATES.USD_XOF = r.XOF;
+      LIVE_RATES.EUR_USD = r.EUR;
+      LIVE_RATES.EUR_XOF = r.XOF / r.EUR;
+      LIVE_RATES.XOF_USD = 1/r.XOF;
+      LIVE_RATES.XOF_EUR = r.EUR/r.XOF;
+      LIVE_RATES.USD_USDT = 1.0;
+      LIVE_RATES.USDT_USD = 1.0;
+      LIVE_RATES.USDT_XOF = r.XOF;
+      LIVE_RATES.XOF_USDT = 1/r.XOF;
+      LIVE_RATES.EUR_USDT = r.EUR;
+      LIVE_RATES.USDT_EUR = 1/r.EUR;
+      // BTC & ETH restent en fallback (API crypto séparée)
+      ratesLoaded = true;
+      lastUpdate = new Date().toLocaleTimeString('fr-FR');
+      document.getElementById('rate-status').textContent = '● Taux live';
+      // Essayer de charger BTC/ETH
+      loadCryptoRates();
+    }
+  } catch(e) {
+    document.getElementById('rate-status').textContent = '● Taux estimés';
+  }
+  renderRates();
+  calc1(); calc2();
+}
+
+async function loadCryptoRates() {
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd,eur,xof');
+    const d = await res.json();
+    if(d.bitcoin) {
+      LIVE_RATES.BTC_USD = d.bitcoin.usd;
+      LIVE_RATES.BTC_EUR = d.bitcoin.eur;
+      LIVE_RATES.BTC_XOF = d.bitcoin.xof || d.bitcoin.usd * LIVE_RATES.USD_XOF;
+      LIVE_RATES.USD_BTC = 1/d.bitcoin.usd;
+      LIVE_RATES.EUR_BTC = 1/d.bitcoin.eur;
+      LIVE_RATES.XOF_BTC = 1/LIVE_RATES.BTC_XOF;
+      LIVE_RATES.BTC_USDT = d.bitcoin.usd;
+      LIVE_RATES.USDT_BTC = 1/d.bitcoin.usd;
+      LIVE_RATES.BTC_ETH = d.bitcoin.usd / d.ethereum.usd;
+    }
+    if(d.ethereum) {
+      LIVE_RATES.ETH_USD = d.ethereum.usd;
+      LIVE_RATES.ETH_EUR = d.ethereum.eur;
+      LIVE_RATES.ETH_XOF = d.ethereum.xof || d.ethereum.usd * LIVE_RATES.USD_XOF;
+      LIVE_RATES.USD_ETH = 1/d.ethereum.usd;
+      LIVE_RATES.EUR_ETH = 1/d.ethereum.eur;
+      LIVE_RATES.XOF_ETH = 1/LIVE_RATES.ETH_XOF;
+      LIVE_RATES.ETH_USDT = d.ethereum.usd;
+      LIVE_RATES.USDT_ETH = 1/d.ethereum.usd;
+      LIVE_RATES.ETH_BTC = d.ethereum.usd/d.bitcoin.usd;
+    }
+    calc1(); calc2();
+    renderRates();
+  } catch(e) {}
+}
+
+function getRate(f,t) {
+  if(f===t) return 1;
+  const key = f+'_'+t;
+  if(LIVE_RATES[key]) return LIVE_RATES[key];
+  const inv = LIVE_RATES[t+'_'+f];
+  if(inv) return 1/inv;
+  return 1;
+}
+
+function fmt(n,c) {
+  if(c==='XOF') return Math.round(n).toLocaleString('fr-FR')+' CFA';
+  if(c==='EUR') return n.toFixed(2)+' €';
+  if(c==='USD') return n.toFixed(2)+' $';
+  if(c==='BTC') return n.toFixed(8)+' ₿';
+  if(c==='ETH') return n.toFixed(6)+' ETH';
+  if(c==='USDT') return n.toFixed(2)+' USDT';
   return n;
 }
 
-function calcAny(aId,fId,tId,rId,feId,totId,toId){
-  const f=document.getElementById(fId).value,t=document.getElementById(tId).value;
+function fmtRate(f,t,rate) {
+  const dec = (f==='BTC'||f==='ETH') ? 2 : (t==='BTC'||t==='ETH') ? 8 : (f==='XOF') ? 6 : 4;
+  return '1 '+f+' = '+rate.toFixed(dec)+' '+t;
+}
+
+function calcGeneric(aId,fId,tId,rId,feId,totId,toId,srcId) {
+  const f=document.getElementById(fId).value;
+  const t=document.getElementById(tId).value;
   const a=parseFloat(document.getElementById(aId).value)||0;
-  const rate=getRate(f,t),fee=a*FEE,net=(a-fee)*rate;
-  document.getElementById(toId).value=t==='XOF'?Math.round(net):t==='BTC'?net.toFixed(8):t==='ETH'?net.toFixed(6):net.toFixed(2);
-  document.getElementById(rId).textContent='1 '+f+' = '+rate.toFixed(f==='BTC'||f==='ETH'?2:f==='XOF'?8:4)+' '+t;
+  const rate=getRate(f,t);
+  const fee=a*FEE;
+  const net=(a-fee)*rate;
+  const toEl=document.getElementById(toId);
+  toEl.value=t==='XOF'?Math.round(net):(t==='BTC'?net.toFixed(8):t==='ETH'?net.toFixed(6):net.toFixed(2));
+  document.getElementById(rId).textContent=fmtRate(f,t,rate);
   document.getElementById(feId).textContent=fmt(fee,f);
   document.getElementById(totId).textContent=fmt(a,f);
+  if(srcId) document.getElementById(srcId).textContent = lastUpdate ? 'Mis à jour à '+lastUpdate+' • Open Exchange Rates' : 'Source : Open Exchange Rates';
 }
 
-function calc1(){calcAny('amt1','from1','tocur1','rate1','fee1','tot1','to1');}
-function calc2(){calcAny('amt2','from2','tocur2','rate2','fee2','tot2','to2');}
-function calc3(){calcAny('amt3','from3','tocur3','rate3','fee3','tot3','to3');}
+function calc1(){calcGeneric('amt1','from1','tocur1','rate1','fee1','tot1','to1','rate-source1');}
+function calc2(){calcGeneric('amt2','from2','tocur2','rate2','fee2','tot2','to2','rate-source2');}
+function swap1(){const f=document.getElementById('from1'),t=document.getElementById('tocur1');[f.value,t.value]=[t.value,f.value];calc1();}
+function swap2(){const f=document.getElementById('from2'),t=document.getElementById('tocur2');[f.value,t.value]=[t.value,f.value];calc2();}
 
-function swap1(){
-  const f=document.getElementById('from1'),t=document.getElementById('tocur1');
-  [f.value,t.value]=[t.value,f.value];
-  calc1();
-}
-function swap2(){
-  const f=document.getElementById('from2'),t=document.getElementById('tocur2');
-  [f.value,t.value]=[t.value,f.value];
-  calc2();
-}
-function swap3(){
-  const f=document.getElementById('from3'),t=document.getElementById('tocur3');
-  [f.value,t.value]=[t.value,f.value];
-  calc3();
-}
-
-function setMode(el,f,t){
-  document.querySelectorAll('.mtab').forEach(x=>x.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('from2').value=f;
-  document.getElementById('tocur2').value=t;
-  calc2();
-}
-
-function renderRates(){
+// ===== RATES DISPLAY =====
+function renderRates() {
   const pairs=[
-    {f:'EUR',t:'XOF',l:'EUR/CFA',ch:'+0.12%',up:true,cls:''},
-    {f:'USD',t:'XOF',l:'USD/CFA',ch:'-0.08%',up:false,cls:''},
-    {f:'BTC',t:'USD',l:'BTC/USD',ch:'+2.4%',up:true,cls:'btc'},
-    {f:'ETH',t:'USD',l:'ETH/USD',ch:'+1.8%',up:true,cls:'eth'},
-    {f:'USDT',t:'XOF',l:'USDT/CFA',ch:'+0.01%',up:true,cls:'usdt'},
+    {f:'EUR',t:'XOF',l:'EUR / CFA'},{f:'USD',t:'XOF',l:'USD / CFA'},
+    {f:'BTC',t:'USD',l:'BTC / USD',btc:true},{f:'ETH',t:'USD',l:'ETH / USD',eth:true},
+    {f:'USDT',t:'XOF',l:'USDT / CFA'},{f:'EUR',t:'USD',l:'EUR / USD'},
   ];
-  const html=pairs.map(p=>`<div class="rc ${p.cls}"><div class="rc-pair">${p.l}</div><div class="rc-val">${getRate(p.f,p.t).toFixed(p.f==='BTC'||p.f==='ETH'?0:p.t==='BTC'||p.t==='ETH'?6:2)}</div><div class="rc-ch ${p.up?'up':'dn'}">${p.up?'▲':'▼'} ${p.ch}</div></div>`).join('');
-  document.getElementById('rates-row').innerHTML=html;
-  document.getElementById('crypto-rates').innerHTML=html;
-  document.getElementById('ticker').innerHTML=[
-    {i:'₿',n:'Bitcoin',p:'64 100 $',ch:'+2.4%',up:true},
-    {i:'⟠',n:'Ethereum',p:'3 145 $',ch:'+1.8%',up:true},
-    {i:'💲',n:'USDT',p:'1.00 $',ch:'+0.01%',up:true},
-    {i:'🌍',n:'1 EUR',p:'656 CFA',ch:'+0.12%',up:true},
-    {i:'💵',n:'1 USD',p:'606 CFA',ch:'-0.08%',up:false},
-    {i:'💶',n:'EUR/USD',p:'1.085',ch:'+0.05%',up:true},
-  ].map(c=>`<div class="tp"><span class="tp-icon">${c.i}</span><span class="tp-name">${c.n}</span><span class="tp-price">${c.p}</span><span class="tp-ch ${c.up?'up':'dn'}">${c.up?'▲':'▼'} ${c.ch}</span></div>`).join('');
+  document.getElementById('rates-row').innerHTML=pairs.map(p=>`
+    <div class="rc" style="${p.btc?'border-color:rgba(247,147,26,.15)':''}${p.eth?'border-color:rgba(98,126,234,.15)':''}">
+      <div class="rc-pair">${p.l}</div>
+      <div class="rc-val" style="${p.btc?'color:var(--btc)':''}${p.eth?'color:var(--eth)':''}">${getRate(p.f,p.t).toFixed(p.f==='BTC'||p.f==='ETH'?0:(p.t==='BTC'||p.t==='ETH')?8:p.f==='XOF'?6:4)}</div>
+      <div class="rc-src">${lastUpdate?'Mis à jour '+lastUpdate:'Taux indicatifs'}</div>
+    </div>
+  `).join('');
 }
 
-const TXS=[
-  {t:'out',i:'💱',c:'out',n:'CFA → EUR',d:"Aujourd'hui, 14h32",a:'50 000 CFA',s:'Complété'},
-  {t:'btc',i:'₿',c:'btc',n:'BTC → EUR',d:"Aujourd'hui, 11h15",a:'0.0045 BTC',s:'Complété'},
-  {t:'eth',i:'⟠',c:'eth',n:'ETH → USD',d:'Hier, 16h40',a:'0.15 ETH',s:'Complété'},
-  {t:'in',i:'💰',c:'in',n:'Rechargement Wave',d:'Hier, 09h20',a:'100 000 CFA',s:'Complété'},
-  {t:'usdt',i:'💲',c:'usdt',n:'USDT → CFA',d:'19 Mar, 14h10',a:'200 USDT',s:'Complété'},
-  {t:'out',i:'💱',c:'out',n:'CFA → USD',d:'19 Mar, 09h50',a:'30 000 CFA',s:'Complété'},
-  {t:'btc',i:'₿',c:'btc',n:'CFA → BTC',d:'18 Mar, 10h05',a:'25 000 CFA',s:'Complété'},
-  {t:'eth',i:'⟠',c:'eth',n:'USDT → ETH',d:'17 Mar, 15h30',a:'500 USDT',s:'Complété'},
+// ===== TRANSACTIONS =====
+let transactions = [
+  {ref:'CFS001A',type:'out',ico:'💱',cls:'out',name:'CFA → EUR',date:"22 Mar, 14h32",from:'50 000 CFA',to:'74.20 €',status:'Complété',user:'Moussa Diallo',email:'moussa@email.com',phone:'+228 90 12 34 56',wallet:'Wave',walletPhone:'+228 90 12 34 56',country:'Togo',ip:'41.200.x.x',hour:'14:32:15',fee:'1 000 CFA'},
+  {ref:'CFS002B',type:'btc',ico:'₿',cls:'btc',name:'BTC → EUR',date:"22 Mar, 11h15",from:'0.005 BTC',to:'289.50 €',status:'Complété',user:'Ama Kofi',email:'ama@gmail.com',phone:'+225 07 23 45 67',wallet:'Orange Money',walletPhone:'+225 07 23 45 67',country:"Côte d'Ivoire",ip:'41.202.x.x',hour:'11:15:43',fee:'0.0001 BTC'},
+  {ref:'CFS003C',type:'in',ico:'💰',cls:'in',name:'Rechargement Wave',date:"21 Mar, 09h20",from:'100 000 CFA',to:'100 000 CFA',status:'Complété',user:'Moussa Diallo',email:'moussa@email.com',phone:'+228 90 12 34 56',wallet:'Wave',walletPhone:'+228 90 12 34 56',country:'Togo',ip:'41.200.x.x',hour:'09:20:08',fee:'0 CFA'},
+  {ref:'CFS004D',type:'out',ico:'💱',cls:'out',name:'CFA → USD',date:"20 Mar, 16h50",from:'30 000 CFA',to:'49.10 $',status:'Complété',user:'Moussa Diallo',email:'moussa@email.com',phone:'+228 90 12 34 56',wallet:'MTN MoMo',walletPhone:'+228 90 12 34 56',country:'Togo',ip:'41.200.x.x',hour:'16:50:22',fee:'600 CFA'},
 ];
 
-function renderTx(id,lim){
-  const list=lim?TXS.slice(0,lim):TXS;
-  document.getElementById(id).innerHTML=list.map(x=>`<div class="tx-item"><div class="tx-ico ${x.c}">${x.i}</div><div class="tx-inf"><div class="tx-name">${x.n}</div><div class="tx-date">${x.d}</div></div><div class="tx-amt"><div class="tx-val ${x.c}">${x.t==='in'?'+ ':'- '}${x.a}</div><div class="tx-st">${x.s}</div></div></div>`).join('');
+function renderTx(id,lim) {
+  const list=lim?transactions.slice(0,lim):transactions;
+  document.getElementById(id).innerHTML=list.map(x=>`
+    <div class="tx-item" onclick="showTxDetail('${x.ref}')">
+      <div class="tx-ico ${x.cls}">${x.ico}</div>
+      <div class="tx-inf"><div class="tx-name">${x.name}</div><div class="tx-date">${x.date} • ${x.wallet}</div><div class="tx-ref">Réf: ${x.ref}</div></div>
+      <div class="tx-amt"><div class="tx-val ${x.cls}">${x.type==='in'?'+ ':'- '}${x.from}</div><div class="tx-st">${x.status}</div></div>
+    </div>
+  `).join('');
 }
 
-function openConfirm(){
-  const f=document.getElementById('from1').value,t=document.getElementById('tocur1').value;
-  const a=parseFloat(document.getElementById('amt1').value)||0;
-  const rate=getRate(f,t),fee=a*FEE,net=(a-fee)*rate;
-  document.getElementById('c-from').textContent=fmt(a,f);
-  document.getElementById('c-to').textContent=fmt(net,t);
-  document.getElementById('c-rate').textContent='1 '+f+' = '+rate.toFixed(f==='BTC'||f==='ETH'?2:f==='XOF'?8:4)+' '+t;
-  document.getElementById('c-fee').textContent=fmt(fee,f);
-  document.getElementById('c-tot').textContent=fmt(a,f);
-  document.getElementById('conf-body').style.display='block';
-  document.getElementById('succ-body').style.display='none';
-  document.getElementById('modal').classList.add('open');
+function showTxDetail(ref) {
+  const tx = transactions.find(t=>t.ref===ref);
+  if(!tx) return;
+  document.getElementById('tx-detail-content').innerHTML=`
+    <div class="tx-detail-row"><span class="tdl">Référence</span><span class="tdv" style="font-family:monospace;color:var(--gold)">${tx.ref}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Client</span><span class="tdv">${tx.user}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Email</span><span class="tdv">${tx.email}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Téléphone</span><span class="tdv">${tx.phone}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Pays</span><span class="tdv">${tx.country}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Opération</span><span class="tdv">${tx.name}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Montant envoyé</span><span class="tdv">${tx.from}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Montant reçu</span><span class="tdv" style="color:#4ade80">${tx.to}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Frais CFASwap</span><span class="tdv" style="color:var(--gold)">${tx.fee}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Wallet réception</span><span class="tdv">${tx.wallet}</span></div>
+    <div class="tx-detail-row"><span class="tdl">N° wallet</span><span class="tdv">${tx.walletPhone}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Date & Heure</span><span class="tdv">${tx.date} à ${tx.hour}</span></div>
+    <div class="tx-detail-row"><span class="tdl">IP (tracé)</span><span class="tdv">${tx.ip}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Statut</span><span class="tdv" style="color:#4ade80">✓ ${tx.status}</span></div>
+  `;
+  document.getElementById('modal-tx').classList.add('open');
 }
 
-function closeModal(){
-  document.getElementById('modal').classList.remove('open');
+// ===== EXCHANGE MODAL =====
+let selectedMM = '';
+
+function selectMM(el, name) {
+  document.querySelectorAll('.mm-opt').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedMM = name;
 }
 
-function confirmEx(){
-  const ref='CFS'+Math.floor(Math.random()*900000+100000);
-  document.getElementById('ref-code').textContent=ref;
-  document.getElementById('conf-body').style.display='none';
-  document.getElementById('succ-body').style.display='block';
-  const a=parseFloat(document.getElementById('amt1').value)||0;
-  if(document.getElementById('from1').value==='XOF'){
-    const cur=parseInt(document.getElementById('wallet-bal').textContent.replace(/\s/g,''))||250000;
+function openExchange() {
+  const f = document.getElementById('from1').value;
+  const t = document.getElementById('tocur1').value;
+  const a = parseFloat(document.getElementById('amt1').value)||0;
+  const rate = getRate(f,t);
+  const fee = a*FEE;
+  const net = (a-fee)*rate;
+  document.getElementById('modal-send').textContent = fmt(a,f);
+  document.getElementById('modal-rate').textContent = fmtRate(f,t,rate);
+  document.getElementById('modal-fee').textContent = fmt(fee,f)+' → Compte CFASwap';
+  document.getElementById('modal-receive').textContent = fmt(net,t);
+
+  // Pré-remplir avec les infos du compte
+  const name = document.getElementById('prof-name').textContent;
+  const email = document.getElementById('prof-email').textContent;
+  if(document.getElementById('tx-name')) document.getElementById('tx-name').value = name !== 'Moussa Diallo' ? name : '';
+  if(document.getElementById('tx-email')) document.getElementById('tx-email').value = email !== 'moussa@email.com' ? email : '';
+
+  document.getElementById('exchange-form-body').style.display='block';
+  document.getElementById('exchange-success').style.display='none';
+  document.getElementById('modal-exchange').classList.add('open');
+}
+
+function confirmExchange() {
+  const name = document.getElementById('tx-name').value.trim();
+  const email = document.getElementById('tx-email').value.trim();
+  const phone = document.getElementById('tx-phone').value.trim();
+  const walletPhone = document.getElementById('wallet-phone').value.trim();
+
+  if(!name || !email || !phone) {
+    alert('Veuillez remplir tous les champs obligatoires (Nom, Email, Téléphone)');
+    return;
+  }
+  if(!selectedMM) {
+    alert('Veuillez sélectionner votre wallet Mobile Money');
+    return;
+  }
+  if(!walletPhone) {
+    alert('Veuillez entrer le numéro de téléphone de votre wallet '+selectedMM);
+    return;
+  }
+
+  const f = document.getElementById('from1').value;
+  const t = document.getElementById('tocur1').value;
+  const a = parseFloat(document.getElementById('amt1').value)||0;
+  const rate = getRate(f,t);
+  const fee = a*FEE;
+  const net = (a-fee)*rate;
+  const country = document.getElementById('tx-country').value;
+  const now = new Date();
+  const ref = 'CFS'+Math.random().toString(36).substr(2,8).toUpperCase();
+  const hour = now.toLocaleTimeString('fr-FR');
+  const dateStr = now.toLocaleDateString('fr-FR')+' '+hour;
+
+  // Ajouter à l'historique
+  const newTx = {
+    ref, type:'out', ico:'💱', cls:'out',
+    name: fmt(a,f)+' → '+t,
+    date: dateStr,
+    from: fmt(a,f), to: fmt(net,t),
+    status:'En cours',
+    user: name, email, phone,
+    wallet: selectedMM, walletPhone,
+    country, ip: 'xxx.xxx.x.x',
+    hour, fee: fmt(fee,f)
+  };
+  transactions.unshift(newTx);
+
+  // Afficher succès
+  document.getElementById('succ-ref').textContent = ref;
+  document.getElementById('succ-details').innerHTML=`
+    <div class="tx-detail-row"><span class="tdl">Client</span><span class="tdv">${name}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Email</span><span class="tdv">${email}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Téléphone</span><span class="tdv">${phone}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Échange</span><span class="tdv">${fmt(a,f)} → ${fmt(net,t)}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Taux appliqué</span><span class="tdv">${fmtRate(f,t,rate)}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Frais CFASwap</span><span class="tdv" style="color:var(--gold)">${fmt(fee,f)}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Wallet réception</span><span class="tdv">${selectedMM} • ${walletPhone}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Date & Heure</span><span class="tdv">${dateStr}</span></div>
+    <div class="tx-detail-row"><span class="tdl">Pays</span><span class="tdv">${country}</span></div>
+  `;
+
+  document.getElementById('exchange-form-body').style.display='none';
+  document.getElementById('exchange-success').style.display='block';
+
+  // Update wallet if CFA
+  if(f==='XOF') {
+    const cur=parseInt(document.getElementById('wallet-bal').textContent.replace(/[\s,]/g,''))||250000;
     document.getElementById('wallet-bal').textContent=Math.max(0,cur-a).toLocaleString('fr-FR');
   }
+
+  renderTx('tx-home',4);
+  renderTx('tx-full');
 }
 
-document.getElementById('modal').addEventListener('click',e=>{
-  if(e.target===document.getElementById('modal')) closeModal();
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-ov').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
 });
 
-function show(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0,0);
-}
-
-function showAuth(t){
-  show('auth');
-  switchAuth(t);
-}
-
+// ===== NAVIGATION =====
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
+function showAuth(t){show('auth');switchAuth(t);}
 function switchAuth(t){
   document.getElementById('form-reg').style.display=t==='register'?'block':'none';
   document.getElementById('form-log').style.display=t==='login'?'block':'none';
@@ -148,35 +907,32 @@ function switchAuth(t){
   document.getElementById('auth-title').textContent=t==='register'?'Créer un compte':'Connexion';
   document.getElementById('auth-sub').textContent=t==='register'?'Rejoignez CFASwap en quelques secondes':'Content de vous revoir !';
 }
-
 function enterApp(){
   const name=document.getElementById('reg-name')?.value||'Moussa Diallo';
+  const email=document.getElementById('reg-email')?.value||'moussa@email.com';
   const ini=name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)||'MD';
   document.getElementById('av-ini').textContent=ini;
   document.getElementById('prof-av').textContent=ini;
   document.getElementById('prof-name').textContent=name;
-  show('app');
-  switchPage('home');
+  document.getElementById('prof-email').textContent=email;
+  show('app');switchPage('home');
 }
-
 function switchPage(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
-  const nav=document.getElementById('ni-'+p);
-  if(nav) nav.classList.add('active');
+  const ni=document.getElementById('ni-'+p);if(ni)ni.classList.add('active');
   window.scrollTo(0,0);
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
-  renderRates();
-  renderTx('tx-home',4);
-  renderTx('tx-full');
-  calc1();
-  calc2();
-  calc3();
-});
-</script>
+// ===== INIT =====
+loadRates();
+calc1();calc2();
+renderTx('tx-home',4);
+renderTx('tx-full');
 
+// Rafraîchir les taux toutes les 5 minutes
+setInterval(loadRates, 5*60*1000);
+</script>
 </body>
 </html>
