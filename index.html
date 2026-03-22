@@ -1,444 +1,117 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>CFASwap</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#08180f" />
-  <style>
-    :root{
-      --bg:#07160f;
-      --bg2:#0d2419;
-      --card:rgba(14,32,24,.72);
-      --line:rgba(132,186,154,.18);
-      --text:#f3f1e9;
-      --muted:#b7c0ba;
-      --green:#48d18a;
-      --green2:#2cb06f;
-      --gold:#d8b24d;
-      --gold2:#f2cf60;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:Arial,Helvetica,sans-serif;
-      color:var(--text);
-      background:
-        radial-gradient(circle at 15% 20%, rgba(70,160,110,.12), transparent 28%),
-        radial-gradient(circle at 85% 35%, rgba(70,160,110,.12), transparent 30%),
-        linear-gradient(180deg, rgba(0,0,0,.2), rgba(0,0,0,.2)),
-        linear-gradient(90deg, #04130c 0%, #0a2015 50%, #04130c 100%);
-      min-height:100vh;
-    }
-    .wrap{
-      max-width:460px;
-      margin:0 auto;
-      padding:26px 18px 40px;
-    }
-    .brand{
-      text-align:center;
-      margin:10px 0 6px;
-      font-size:44px;
-      font-weight:900;
-      letter-spacing:-2px;
-      line-height:1;
-    }
-    .brand .cfa{color:var(--gold2)}
-    .brand .swap{color:var(--green)}
-    .sub{
-      text-align:center;
-      color:var(--muted);
-      font-size:15px;
-      margin-bottom:26px;
-    }
-    .cards{
-      display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:12px;
-      margin-bottom:26px;
-    }
-    .asset{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:14px 8px;
-      text-align:center;
-      box-shadow:0 0 0 1px rgba(255,255,255,.02) inset;
-    }
-    .asset .icon{
-      font-size:34px;
-      margin-bottom:6px;
-    }
-    .asset .t1{
-      font-weight:700;
-      font-size:15px;
-      line-height:1.1;
-    }
-    .asset .t2{
-      color:var(--muted);
-      font-size:13px;
-      margin-top:4px;
-    }
-    .exchangeable{
-      text-align:center;
-      font-size:26px;
-      color:#d7ddd8;
-      margin:12px 0 16px;
-    }
-    .mini-title{
-      text-align:center;
-      color:#cbd3ce;
-      letter-spacing:2px;
-      font-size:12px;
-      margin:0 0 14px;
-      text-transform:uppercase;
-    }
-    .countries{
-      display:flex;
-      flex-wrap:wrap;
-      justify-content:center;
-      gap:10px 8px;
-      margin-bottom:28px;
-    }
-    .pill{
-      background:rgba(14,32,24,.72);
-      border:1px solid var(--line);
-      color:#e7ece8;
-      padding:9px 12px;
-      border-radius:999px;
-      font-size:14px;
-      line-height:1;
-    }
-    .btn{
-      display:block;
-      width:100%;
-      border:none;
-      border-radius:18px;
-      padding:19px 18px;
-      font-size:19px;
-      font-weight:800;
-      cursor:pointer;
-      text-align:center;
-      text-decoration:none;
-      margin-bottom:14px;
-    }
-    .btn-primary{
-      color:white;
-      background:linear-gradient(90deg,var(--green2),var(--green));
-      box-shadow:0 10px 26px rgba(51,184,113,.2);
-    }
-    .btn-secondary{
-      color:#e8ede9;
-      background:rgba(10,25,18,.35);
-      border:1px solid rgba(109,157,130,.25);
-    }
-    .panel{
-      display:none;
-      margin-top:18px;
-      background:rgba(10,25,18,.4);
-      border:1px solid rgba(109,157,130,.16);
-      border-radius:22px;
-      padding:18px;
-    }
-    .panel.active{display:block}
-    .tabs{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-      margin-bottom:16px;
-    }
-    .tab{
-      border:none;
-      border-radius:14px;
-      padding:14px;
-      font-weight:800;
-      font-size:18px;
-      cursor:pointer;
-      background:rgba(255,255,255,.04);
-      color:#aeb7b2;
-    }
-    .tab.active{
-      background:linear-gradient(90deg,var(--green2),var(--green));
-      color:#fff;
-    }
-    .field{
-      margin-bottom:14px;
-    }
-    .label{
-      display:block;
-      color:#bcc5bf;
-      font-size:13px;
-      letter-spacing:1px;
-      text-transform:uppercase;
-      margin:0 0 8px;
-    }
-    input, select{
-      width:100%;
-      background:rgba(14,32,24,.72);
-      border:1px solid var(--line);
-      color:white;
-      border-radius:16px;
-      padding:17px 16px;
-      font-size:17px;
-      outline:none;
-    }
-    input::placeholder{color:#7f8d86}
-    .notice{
-      color:#d0d7d2;
-      background:rgba(216,178,77,.08);
-      border:1px solid rgba(216,178,77,.22);
-      border-radius:16px;
-      padding:14px;
-      font-size:14px;
-      line-height:1.5;
-      margin:10px 0 16px;
-    }
-    .converter{
-      margin-top:18px;
-      background:rgba(10,25,18,.4);
-      border:1px solid rgba(109,157,130,.16);
-      border-radius:22px;
-      padding:18px;
-    }
-    .converter h3{
-      margin:0 0 6px;
-      font-size:28px;
-      color:var(--gold2);
-      text-align:center;
-    }
-    .converter p{
-      margin:0 0 16px;
-      text-align:center;
-      color:#c4cbc7;
-    }
-    .result{
-      margin:14px 0 0;
-      border-radius:16px;
-      padding:15px;
-      background:rgba(72,209,138,.08);
-      border:1px solid rgba(72,209,138,.22);
-      color:#e9f7ef;
-      font-size:17px;
-      line-height:1.5;
-      min-height:56px;
-    }
-    .hidden{display:none}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>CFASwap</title>
+
+<style>
+body{
+    background:#062f1f;
+    font-family:Arial;
+    text-align:center;
+    color:white;
+    padding:30px;
+}
+
+h1{
+    color:#FFD700;
+}
+
+.container{
+    max-width:400px;
+    margin:auto;
+}
+
+input, select, button{
+    width:100%;
+    padding:15px;
+    margin:10px 0;
+    border:none;
+    border-radius:8px;
+}
+
+button{
+    background:#FFD700;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+#result{
+    margin-top:20px;
+}
+</style>
+
 </head>
+
 <body>
-  <div class="wrap">
-    <div class="brand"><span class="cfa">CFA</span><span class="swap">Swap</span></div>
-    <div class="sub">CFA · Bitcoin · Ethereum · USDT · EUR · USD</div>
 
-    <div class="cards">
-      <div class="asset"><div class="icon">🌍</div><div class="t1">CFA</div><div class="t2">XOF / XAF</div></div>
-      <div class="asset"><div class="icon">₿</div><div class="t1">Bitcoin</div><div class="t2">BTC</div></div>
-      <div class="asset"><div class="icon">◇</div><div class="t1">Ethereum</div><div class="t2">ETH</div></div>
-      <div class="asset"><div class="icon">$</div><div class="t1">USDT</div><div class="t2">Tether</div></div>
-    </div>
+<h1>CFASwap</h1>
+<p>Échange CFA, USD, EUR avec frais de 2%</p>
 
-    <div class="exchangeable">⇅ Tout échangeable</div>
-    <div class="mini-title">10 pays — Afrique de l'Ouest &amp; Centrale</div>
+<div class="container">
 
-    <div class="countries">
-      <span class="pill">🇹🇬 Togo</span>
-      <span class="pill">🇨🇬 Congo</span>
-      <span class="pill">🇨🇩 RD Congo</span>
-      <span class="pill">🇬🇦 Gabon</span>
-      <span class="pill">🇨🇲 Cameroun</span>
-      <span class="pill">🇨🇮 Côte d’Ivoire</span>
-      <span class="pill">🇧🇯 Bénin</span>
-      <span class="pill">🇧🇫 Burkina</span>
-      <span class="pill">🇲🇱 Mali</span>
-      <span class="pill">🇸🇳 Sénégal</span>
-    </div>
+<input id="amount" placeholder="Entrer le montant">
 
-    <button class="btn btn-primary" onclick="openPanel('signupPanel','signupTab')">Créer un compte gratuit</button>
-    <button class="btn btn-secondary" onclick="openPanel('signupPanel','loginTab')">J'ai déjà un compte</button>
+<select id="from">
+<option value="USD">USD</option>
+<option value="EUR">EUR</option>
+<option value="CFA">CFA</option>
+</select>
 
-    <div id="signupPanel" class="panel">
-      <div class="tabs">
-        <button id="signupTab" class="tab active" onclick="setAuthTab('signup')">Inscription</button>
-        <button id="loginTab" class="tab" onclick="setAuthTab('login')">Connexion</button>
-      </div>
+<select id="to">
+<option value="CFA">CFA</option>
+<option value="USD">USD</option>
+<option value="EUR">EUR</option>
+</select>
 
-      <div id="signupForm">
-        <div class="field">
-          <label class="label">Nom complet</label>
-          <input id="fullName" type="text" placeholder="Ex: Moussa Diallo" />
-        </div>
-        <div class="field">
-          <label class="label">E-mail</label>
-          <input id="email" type="email" placeholder="email@exemple.com" />
-        </div>
-        <div class="field">
-          <label class="label">Téléphone</label>
-          <input id="phone" type="tel" placeholder="+228 70 16 05 06" />
-        </div>
-        <div class="field">
-          <label class="label">Pays</label>
-          <select id="country">
-            <option>Togo</option>
-            <option>Congo</option>
-            <option>RD Congo</option>
-            <option>Gabon</option>
-            <option>Cameroun</option>
-            <option>Côte d’Ivoire</option>
-            <option>Bénin</option>
-            <option>Burkina</option>
-            <option>Mali</option>
-            <option>Sénégal</option>
-          </select>
-        </div>
-        <div class="field">
-          <label class="label">Mot de passe</label>
-          <input id="password" type="password" placeholder="Minimum 8 caractères" />
-        </div>
+<button onclick="convert()">Convertir</button>
 
-        <div class="notice">
-          ⚖️ <b>Conformité :</b> CFASwap respecte BCEAO, BEAC et FinCEN USA.
-          KYC requis au-delà de 500 000 CFA. Échanges crypto soumis aux lois locales.
-        </div>
+<div id="result"></div>
 
-        <button class="btn btn-primary" onclick="submitSignup()">Créer mon compte →</button>
-      </div>
+<button onclick="sendWhatsApp()">Échanger sur WhatsApp</button>
 
-      <div id="loginForm" class="hidden">
-        <div class="field">
-          <label class="label">E-mail</label>
-          <input id="loginEmail" type="email" placeholder="email@exemple.com" />
-        </div>
-        <div class="field">
-          <label class="label">Mot de passe</label>
-          <input id="loginPassword" type="password" placeholder="Mot de passe" />
-        </div>
-        <button class="btn btn-primary" onclick="submitLogin()">Se connecter →</button>
-      </div>
-    </div>
+</div>
 
-    <div class="converter">
-      <h3>Convertisseur</h3>
-      <p>Échange CFA, USD, EUR et crypto avec frais de 2%</p>
+<script>
 
-      <div class="field">
-        <label class="label">Montant</label>
-        <input id="amount" type="number" placeholder="Entre le montant" />
-      </div>
+const ratesToCFA = {
+USD:600,
+EUR:655,
+CFA:1
+};
 
-      <div class="field">
-        <label class="label">De</label>
-        <select id="from">
-          <option value="USD">USD</option>
-          <option value="CFA">CFA</option>
-          <option value="EUR">EUR</option>
-          <option value="USDT">USDT</option>
-        </select>
-      </div>
+function convert(){
+let amount = parseFloat(document.getElementById('amount').value);
+let from = document.getElementById('from').value;
+let to = document.getElementById('to').value;
 
-      <div class="field">
-        <label class="label">Vers</label>
-        <select id="to">
-          <option value="CFA">CFA</option>
-          <option value="USD">USD</option>
-          <option value="EUR">EUR</option>
-          <option value="USDT">USDT</option>
-        </select>
-      </div>
+let amountInCFA = amount * ratesToCFA[from];
+let converted = amountInCFA / ratesToCFA[to];
+let fee = converted * 0.02;
+let finalAmount = converted - fee;
 
-      <button class="btn btn-primary" onclick="convert()">Convertir</button>
-      <div id="result" class="result">Le résultat s'affichera ici.</div>
-      <button class="btn btn-secondary" onclick="sendWhatsApp()">Échanger maintenant sur WhatsApp</button>
-    </div>
-  </div>
+document.getElementById('result').innerHTML =
+"Montant brut : <b>" + converted.toFixed(2) + " " + to + "</b><br>" +
+"Frais (2%) : <b>" + fee.toFixed(2) + " " + to + "</b><br>" +
+"Montant final : <b>" + finalAmount.toFixed(2) + " " + to + "</b>";
+}
 
-  <script>
-    function openPanel(panelId, tabId){
-      document.getElementById(panelId).classList.add('active');
-      if(tabId === 'loginTab'){
-        setAuthTab('login');
-      } else {
-        setAuthTab('signup');
-      }
-      window.scrollTo({top: document.getElementById(panelId).offsetTop - 10, behavior:'smooth'});
-    }
+function sendWhatsApp(){
+let amount = document.getElementById('amount').value;
+let from = document.getElementById('from').value;
+let to = document.getElementById('to').value;
 
-    function setAuthTab(type){
-      const signupTab = document.getElementById('signupTab');
-      const loginTab = document.getElementById('loginTab');
-      const signupForm = document.getElementById('signupForm');
-      const loginForm = document.getElementById('loginForm');
+let msg = "Bonjour, je veux échanger :%0A" +
+"Montant: " + amount + "%0A" +
+"De: " + from + "%0A" +
+"Vers: " + to;
 
-      if(type === 'signup'){
-        signupTab.classList.add('active');
-        loginTab.classList.remove('active');
-        signupForm.classList.remove('hidden');
-        loginForm.classList.add('hidden');
-      } else {
-        loginTab.classList.add('active');
-        signupTab.classList.remove('active');
-        loginForm.classList.remove('hidden');
-        signupForm.classList.add('hidden');
-      }
-    }
+window.open("https://wa.me/22870160506?text=" + msg, "_blank");
+}
 
-    function submitSignup(){
-      const name = document.getElementById('fullName').value || '';
-      const email = document.getElementById('email').value || '';
-      const phone = document.getElementById('phone').value || '';
-      const country = document.getElementById('country').value || '';
-      const msg = "Bonjour, nouvelle inscription CFASwap.%0A"
-        + "Nom: " + encodeURIComponent(name) + "%0A"
-        + "Email: " + encodeURIComponent(email) + "%0A"
-        + "Téléphone: " + encodeURIComponent(phone) + "%0A"
-        + "Pays: " + encodeURIComponent(country);
-      window.open("https://wa.me/22870160506?text=" + msg, "_blank");
-    }
+</script>
 
-    function submitLogin(){
-      const email = document.getElementById('loginEmail').value || '';
-      const msg = "Bonjour, je souhaite me connecter à mon compte CFASwap. Email: " + encodeURIComponent(email);
-      window.open("https://wa.me/22870160506?text=" + msg, "_blank");
-    }
-
-    function convert(){
-      const amount = parseFloat(document.getElementById('amount').value);
-      const from = document.getElementById('from').value;
-      const to = document.getElementById('to').value;
-
-      if(!amount){
-        document.getElementById('result').innerHTML = "Entre un montant.";
-        return;
-      }
-
-      const ratesToCFA = {
-        CFA: 1,
-        USD: 600,
-        EUR: 655,
-        USDT: 600
-      };
-
-      let amountInCFA = amount * ratesToCFA[from];
-      let converted = amountInCFA / ratesToCFA[to];
-      let fee = converted * 0.02;
-      let finalAmount = converted - fee;
-
-      document.getElementById('result').innerHTML =
-        "Montant brut : <b>" + converted.toFixed(2) + " " + to + "</b><br>" +
-        "Frais CFASwap (2%) : <b>" + fee.toFixed(2) + " " + to + "</b><br>" +
-        "Montant final reçu : <b>" + finalAmount.toFixed(2) + " " + to + "</b>";
-    }
-
-    function sendWhatsApp(){
-      const amount = document.getElementById('amount').value || '';
-      const from = document.getElementById('from').value || '';
-      const to = document.getElementById('to').value || '';
-      const msg = "Bonjour, je souhaite effectuer un échange sur CFASwap.%0A"
-        + "Montant: " + encodeURIComponent(amount) + "%0A"
-        + "De: " + encodeURIComponent(from) + "%0A"
-        + "Vers: " + encodeURIComponent(to);
-      window.open("https://wa.me/22870160506?text=" + msg, "_blank");
-    }
-  </script>
 </body>
 </html>
